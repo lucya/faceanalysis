@@ -1,0 +1,14 @@
+{
+  "name": "faceanalysis",
+  "version": "1.0.0",
+  "description": "",
+  "scripts": {
+    "start": "netlify dev",
+    "build": "netlify build"
+  },
+
+  "dependencies": {
+    "@google/generative-ai": "^0.15.0",
+    "dotenv": "^16.4.5"
+  }
+}

@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>얼굴 표정 분석</title>
+    <style>
+      body {
+        font-family: "Nanum Gothic", Arial, sans-serif;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+        background-color: #f0f4f8;
+        color: #333;
+      }
+      h1 {
+        text-align: center;
+        color: #2c3e50;
+        margin-bottom: 30px;
+      }
+      .container {
+        background-color: white;
+        padding: 30px;
+        border-radius: 8px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      }
+      #imagePreview {
+        max-width: 100%;
+        max-height: 300px;
+        margin: 20px auto;
+        display: none;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+      #imageInput {
+        display: none;
+      }
+      .btn {
+        background-color: #3498db;
+        color: white;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 16px;
+        transition: background-color 0.3s;
+      }
+      .btn:hover {
+        background-color: #2980b9;
+      }
+      #loading {
+        text-align: center;
+        display: none;
+        color: #3498db;
+        font-weight: bold;
+        margin-top: 20px;
+      }
+      #result {
+        margin-top: 20px;
+        white-space: pre-wrap;
+        background-color: #ecf0f1;
+        padding: 15px;
+        border-radius: 4px;
+        font-size: 14px;
+      }
+      #translate {
+        display: flex;
+        justify-content: center;
+        margin-bottom: 20px;
+      }
+      body > .skiptranslate {
+        display: none !important;
+      }
+      .button-group {
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+        margin-top: 20px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="translate"></div>
+
+    <div class="container">
+      <h1>얼굴 표정 분석</h1>
+      <div class="button-group">
+        <label for="imageInput" class="btn">이미지 선택</label>
+        <input type="file" id="imageInput" accept="image/*" />
+        <button onclick="analyzeImage()" class="btn">분석하기</button>
+      </div>
+      <img id="imagePreview" alt="Image Preview" src="" />
+
+      <div id="loading">분석 중...</div>
+      <div id="result"></div>
+    </div>
+
+    <script>
+      function onLoadTranslate() {
+        new google.translate.TranslateElement(
+          { pageLanguage: "en" },
+          "translate"
+        );
+      }
+    </script>
+    <script src="https://translate.google.com/translate_a/element.js?cb=onLoadTranslate"></script>
+
+    <script>
+      const imagePreview = document.getElementById("imagePreview");
+      const imageInput = document.getElementById("imageInput");
+      const loading = document.getElementById("loading");
+
+      imageInput.addEventListener("change", function (event) {
+        console.log(this.files);
+
+        if (this.files.length > 0) {
+          const file = this.files[0];
+          if (file.type.startsWith("image/")) {
+            const reader = new FileReader();
+            reader.onload = function (e) {
+              imagePreview.src = e.target.result;
+              imagePreview.style.display = "block";
+            };
+            reader.readAsDataURL(file);
+          } else {
+            alert("Please select image");
+          }
+        }
+      });
+
+      async function analyzeImage() {
+        const file = imageInput.files[0];
+        if (!file) {
+          alert("이미지를 선택해주세요.");
+          return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = async function (e) {
+          loading.style.display = "block";
+
+          const base64Image = e.target.result.split(",")[1];
+
+          try {
+            const response = await fetch("/.netlify/functions/api", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ image: base64Image }),
+            });
+
+            if (!response.ok) {
+              throw new Error("서버 오류");
+            }
+
+            const data = await response.json();
+            loading.style.display = "none";
+
+            document.getElementById("result").textContent = data.analysis;
+          } catch (error) {
+            console.error("Error:", error);
+            alert("분석 중 오류가 발생했습니다.");
+          }
+        };
+        reader.readAsDataURL(file);
+      }
+    </script>
+  </body>
+</html>
